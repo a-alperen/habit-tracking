@@ -3,143 +3,711 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alışkanlık Takip Paneli</title>
+    <title>Alışkanlık Takip Paneli - Disiplin Modu</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; }
-        .check-btn { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
-        .check-btn:active { transform: scale(0.85); }
-        .bar-fill { transition: height 0.5s ease-out, background-color 0.3s ease; }
+        .check-btn { transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1); }
+        .check-btn-active:active { transform: scale(0.85); }
+        .bar-fill { transition: height 0.4s ease-out, background-color 0.3s ease; }
         .toast-enter { transform: translateY(0); opacity: 1; }
         .toast-exit { transform: translateY(1rem); opacity: 0; }
+        ::-webkit-scrollbar { height: 8px; width: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
     </style>
 </head>
 <body class="min-h-screen p-4 md:p-8">
 
-    <div class="max-w-5xl mx-auto space-y-6">
-        <!-- Üst Başlık, Özet İstatistikler ve Yedekleme Araçları -->
-        <header class="flex flex-col lg:flex-row justify-between items-start lg:items-center bg-slate-800/80 border border-slate-700 p-6 rounded-2xl shadow-lg gap-4">
-            <div>
-                <h1 class="text-2xl font-bold text-white flex items-center gap-2">
-                    <span>🎯</span> Haftalık Alışkanlık ve Seri Paneli
-                </h1>
-                <p id="currentDateText" class="text-slate-400 text-sm mt-1"></p>
-            </div>
-
-            <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-between lg:justify-end">
-                <!-- İstatistik Kartları -->
-                <div class="flex gap-3 flex-1 sm:flex-none">
-                    <div class="bg-slate-900/90 border border-slate-700/80 px-4 py-2.5 rounded-xl flex-1 sm:flex-none text-center">
-                        <span class="text-[11px] text-slate-400 block">Haftalık Başarı</span>
-                        <span id="weeklyRate" class="text-lg font-bold text-emerald-400">0%</span>
+    <div class="max-w-6xl mx-auto space-y-6">
+        <!-- Üst Başlık ve İstatistikler -->
+        <header class="flex flex-col bg-slate-800/80 border border-slate-700 p-6 rounded-2xl shadow-lg gap-5">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <div class="flex items-center gap-2.5">
+                        <h1 class="text-2xl font-bold text-white flex items-center gap-2">
+                            <span>🎯</span> Alışkanlık ve Seri Takip Paneli
+                        </h1>
+                        <span class="bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] font-semibold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                            🔒 Sıkı Disiplin Modu
+                        </span>
                     </div>
-                    <div class="bg-slate-900/90 border border-slate-700/80 px-4 py-2.5 rounded-xl flex-1 sm:flex-none text-center">
-                        <span class="text-[11px] text-slate-400 block">En Uzun Seri</span>
-                        <span id="bestStreak" class="text-lg font-bold text-amber-400">🔥 0</span>
-                    </div>
+                    <p id="currentDateText" class="text-slate-400 text-sm mt-1"></p>
                 </div>
 
-                <!-- JSON Dışa / İçe Aktarma Butonları -->
-                <div class="flex gap-2 w-full sm:w-auto border-t sm:border-t-0 border-slate-700 pt-3 sm:pt-0">
-                    <button onclick="exportData()" title="Verileri JSON dosyası olarak indir"
-                        class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-medium px-3.5 py-2.5 rounded-xl border border-slate-600 transition cursor-pointer">
-                        <span>📥</span> Dışa Aktar
+                <!-- Genel İstatistik Kartları -->
+                <div class="grid grid-cols-3 gap-3 w-full md:w-auto">
+                    <div class="bg-slate-900/90 border border-slate-700/80 px-4 py-2.5 rounded-xl text-center">
+                        <span class="text-[11px] text-slate-400 block">Bu Hafta</span>
+                        <span id="statWeekly" class="text-lg font-bold text-emerald-400">0%</span>
+                    </div>
+                    <div class="bg-slate-900/90 border border-slate-700/80 px-4 py-2.5 rounded-xl text-center">
+                        <span class="text-[11px] text-slate-400 block">Bu Ay</span>
+                        <span id="statMonthly" class="text-lg font-bold text-indigo-400">0%</span>
+                    </div>
+                    <div class="bg-slate-900/90 border border-slate-700/80 px-4 py-2.5 rounded-xl text-center">
+                        <span class="text-[11px] text-slate-400 block">Aktif Rekor Seri</span>
+                        <span id="statBestStreak" class="text-lg font-bold text-amber-400">🔥 0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Veri Senkronizasyon ve Yedekleme Barı -->
+            <div class="flex flex-wrap items-center justify-between gap-2 pt-4 border-t border-slate-700/80">
+                <span class="text-xs text-slate-400 font-medium">🔄 Cihazlar Arası Aktarım (Yedekleme):</span>
+                
+                <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+                    <button onclick="copySyncCode()" class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 text-xs font-medium px-3.5 py-2 rounded-xl transition cursor-pointer">
+                        <span>📋</span> Kodu Kopyala
                     </button>
-                    <button onclick="triggerImport()" title="JSON yedek dosyasını yükle"
-                        class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-medium px-3.5 py-2.5 rounded-xl border border-slate-600 transition cursor-pointer">
-                        <span>📤</span> İçe Aktar
+                    <button onclick="openSyncModal()" class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 text-xs font-medium px-3.5 py-2 rounded-xl transition cursor-pointer">
+                        <span>📲</span> Kodu Yapıştır
                     </button>
-                    <!-- Gizli Dosya Seçici -->
+                    <button onclick="exportData()" class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-medium px-3.5 py-2 rounded-xl border border-slate-600 transition cursor-pointer">
+                        <span>📥</span> JSON İndir
+                    </button>
+                    <button onclick="triggerImport()" class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-medium px-3.5 py-2 rounded-xl border border-slate-600 transition cursor-pointer">
+                        <span>📤</span> JSON Yükle
+                    </button>
                     <input type="file" id="importFileInput" accept=".json" class="hidden" onchange="importData(event)">
                 </div>
             </div>
         </header>
 
-        <!-- Yeni Alışkanlık Ekleme Formu -->
-        <div class="bg-slate-800/80 border border-slate-700 p-4 rounded-2xl flex flex-col sm:flex-row gap-3">
-            <input type="text" id="habitInput" placeholder="Yeni bir günlük hedef ekle (Örn: 2 Litre Su İç, 30 Dk Kitap Oku)..." 
-                class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
-            <button onclick="addHabit()" 
-                class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-6 py-2.5 rounded-xl transition cursor-pointer shrink-0">
-                + Hedef Ekle
-            </button>
+        <!-- Yeni Alışkanlık Ekleme ve Görünüm Sekmeleri -->
+        <div class="flex flex-col md:flex-row justify-between gap-4">
+            <div class="bg-slate-800/80 border border-slate-700 p-1.5 rounded-2xl inline-flex gap-1 shrink-0">
+                <button onclick="switchView('weekly')" id="tab-weekly" class="flex-1 md:flex-none px-5 py-2 rounded-xl text-sm font-medium transition cursor-pointer bg-indigo-600 text-white">
+                    📅 Haftalık
+                </button>
+                <button onclick="switchView('monthly')" id="tab-monthly" class="flex-1 md:flex-none px-5 py-2 rounded-xl text-sm font-medium transition cursor-pointer text-slate-400 hover:text-white">
+                    🗓️ Aylık
+                </button>
+                <button onclick="switchView('yearly')" id="tab-yearly" class="flex-1 md:flex-none px-5 py-2 rounded-xl text-sm font-medium transition cursor-pointer text-slate-400 hover:text-white">
+                    📊 Yıllık (Isı Haritası)
+                </button>
+            </div>
+
+            <div class="bg-slate-800/80 border border-slate-700 p-2 rounded-2xl flex flex-1 gap-2">
+                <input type="text" id="habitInput" placeholder="Yeni bir günlük hedef ekle (Örn: 2.5L Su İç, Kitap Oku)..." 
+                    class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+                <button onclick="addHabit()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium px-5 py-2 rounded-xl transition cursor-pointer shrink-0">
+                    + Hedef Ekle
+                </button>
+            </div>
         </div>
 
-        <!-- Ana İçerik: Tablo ve Grafik -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            <!-- Sol: Haftalık Alışkanlık Tablosu (2 Sütun Genişliğinde) -->
+        <!-- ================= 1. HAFTALIK GÖRÜNÜM ================= -->
+        <div id="view-weekly" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="lg:col-span-2 bg-slate-800/80 border border-slate-700 rounded-2xl p-6 overflow-x-auto">
-                <h2 class="text-lg font-semibold mb-4 text-slate-200">Günlük Hedef Çizelgesi</h2>
-                <table class="w-full text-left border-collapse min-w-[500px]">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-5 gap-3">
+                    <div>
+                        <h2 class="text-lg font-semibold text-slate-200">Haftalık Çizelge</h2>
+                        <p class="text-xs text-slate-400 mt-0.5">Yalnızca <b class="text-emerald-400">bugünün</b> hedefleri düzenlenebilir. Geçmiş günler kilitlidir.</p>
+                    </div>
+                    <div class="flex items-center gap-2 bg-slate-900 border border-slate-700 rounded-xl p-1">
+                        <button onclick="changeWeek(-1)" class="px-2.5 py-1 hover:bg-slate-800 rounded-lg text-slate-300 cursor-pointer">◀</button>
+                        <span id="weekRangeLabel" class="text-xs font-medium px-2 text-slate-200 min-w-[150px] text-center"></span>
+                        <button onclick="changeWeek(1)" class="px-2.5 py-1 hover:bg-slate-800 rounded-lg text-slate-300 cursor-pointer">▶</button>
+                        <button onclick="resetToCurrentWeek()" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-indigo-300 px-2.5 py-1 rounded-lg cursor-pointer">Bugün</button>
+                    </div>
+                </div>
+
+                <table class="w-full text-left border-collapse min-w-[520px]">
                     <thead>
-                        <tr class="border-b border-slate-700 text-slate-400 text-xs uppercase">
-                            <th class="pb-3 font-medium">Hedef</th>
-                            <th class="pb-3 font-medium text-center">Pzt</th>
-                            <th class="pb-3 font-medium text-center">Sal</th>
-                            <th class="pb-3 font-medium text-center">Çar</th>
-                            <th class="pb-3 font-medium text-center">Per</th>
-                            <th class="pb-3 font-medium text-center">Cum</th>
-                            <th class="pb-3 font-medium text-center">Cmt</th>
-                            <th class="pb-3 font-medium text-center">Paz</th>
-                            <th class="pb-3 font-medium text-center">Seri</th>
-                            <th class="pb-3 font-medium text-right">Sil</th>
-                        </tr>
+                        <tr id="weeklyTableHeader" class="border-b border-slate-700 text-slate-400 text-xs"></tr>
                     </thead>
-                    <tbody id="habitList" class="divide-y divide-slate-700/60 text-sm">
-                        <!-- JS ile doldurulacak -->
-                    </tbody>
+                    <tbody id="weeklyHabitList" class="divide-y divide-slate-700/60 text-sm"></tbody>
                 </table>
             </div>
 
-            <!-- Sağ: Haftalık Seri ve Tamamlanma Grafiği -->
+            <!-- Sağ: Haftalık Sütun Grafiği -->
             <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-6 flex flex-col justify-between">
                 <div>
-                    <h2 class="text-lg font-semibold text-slate-200">Haftalık Performans Grafiği</h2>
-                    <p class="text-xs text-slate-400 mt-1">Gün bazında tamamlanan hedef oranı</p>
+                    <h2 class="text-lg font-semibold text-slate-200">Haftalık Performans</h2>
+                    <p class="text-xs text-slate-400 mt-1">Seçili haftanın günlük tamamlanma oranı</p>
+                </div>
+                <div id="weeklyChartContainer" class="grid grid-cols-7 gap-2 items-end h-52 pt-8 pb-2 border-b border-slate-700 my-4"></div>
+                <div class="text-xs text-slate-400 flex justify-between">
+                    <span>🔒 Geçmiş günler değiştirilemez</span>
+                    <span class="text-emerald-400">● Bugün aktif</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= 2. AYLIK GÖRÜNÜM ================= -->
+        <div id="view-monthly" class="hidden space-y-6">
+            <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                    <div>
+                        <h2 class="text-lg font-semibold text-slate-200">Aylık Takip Matrisi</h2>
+                        <p class="text-xs text-slate-400">Geçmiş günler salt okunurdur; yalnızca bugünün sütunu işaretlenebilir</p>
+                    </div>
+                    <div class="flex items-center gap-2 bg-slate-900 border border-slate-700 rounded-xl p-1">
+                        <button onclick="changeMonth(-1)" class="px-3 py-1 hover:bg-slate-800 rounded-lg text-slate-300 cursor-pointer">◀</button>
+                        <span id="monthLabel" class="text-sm font-semibold px-4 text-white min-w-[140px] text-center"></span>
+                        <button onclick="changeMonth(1)" class="px-3 py-1 hover:bg-slate-800 rounded-lg text-slate-300 cursor-pointer">▶</button>
+                    </div>
                 </div>
 
-                <!-- Sütun Grafiği Alanı -->
-                <div id="chartContainer" class="grid grid-cols-7 gap-2 items-end h-52 pt-8 pb-2 border-b border-slate-700 my-4">
-                    <!-- JS ile dinamik barlar gelecek -->
+                <div class="overflow-x-auto pb-2">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr id="monthlyTableHeader" class="border-b border-slate-700 text-slate-400 text-[11px]"></tr>
+                        </thead>
+                        <tbody id="monthlyHabitList" class="divide-y divide-slate-700/60 text-xs"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= 3. YILLIK GÖRÜNÜM ================= -->
+        <div id="view-yearly" class="hidden space-y-6">
+            <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                    <div>
+                        <h2 class="text-lg font-semibold text-slate-200">Yıllık Aktivite Isı Haritası (Heatmap)</h2>
+                        <p class="text-xs text-slate-400">Yıl boyunca her gün tamamladığınız hedef yoğunluğu</p>
+                    </div>
+                    <div class="flex items-center gap-2 bg-slate-900 border border-slate-700 rounded-xl p-1">
+                        <button onclick="changeYear(-1)" class="px-3 py-1 hover:bg-slate-800 rounded-lg text-slate-300 cursor-pointer">◀</button>
+                        <span id="yearLabel" class="text-sm font-bold px-4 text-white"></span>
+                        <button onclick="changeYear(1)" class="px-3 py-1 hover:bg-slate-800 rounded-lg text-slate-300 cursor-pointer">▶</button>
+                    </div>
                 </div>
 
-                <div class="flex justify-between items-center text-xs text-slate-400">
-                    <span>💡 İpucu: Kutucuklara tıklayarak durumu değiştirin.</span>
-                    <button onclick="resetWeek()" class="text-rose-400 hover:underline cursor-pointer">Haftayı Sıfırla</button>
+                <div class="overflow-x-auto pb-3">
+                    <div class="min-w-[750px]">
+                        <div class="grid grid-cols-12 text-xs text-slate-400 mb-2 px-1">
+                            <span>Oca</span><span>Şub</span><span>Mar</span><span>Nis</span><span>May</span><span>Haz</span>
+                            <span>Tem</span><span>Ağu</span><span>Eyl</span><span>Eki</span><span>Kas</span><span>Ara</span>
+                        </div>
+                        <div id="yearlyHeatmap" class="grid grid-flow-col grid-rows-7 gap-1.5"></div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 text-xs text-slate-400 mt-4">
+                    <span>Az</span>
+                    <span class="w-3.5 h-3.5 rounded-sm bg-slate-900 border border-slate-700 inline-block"></span>
+                    <span class="w-3.5 h-3.5 rounded-sm bg-emerald-900 inline-block"></span>
+                    <span class="w-3.5 h-3.5 rounded-sm bg-emerald-700 inline-block"></span>
+                    <span class="w-3.5 h-3.5 rounded-sm bg-emerald-500 inline-block"></span>
+                    <span class="w-3.5 h-3.5 rounded-sm bg-emerald-400 inline-block"></span>
+                    <span>Çok (%100)</span>
                 </div>
             </div>
 
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-6">
+                    <h3 class="text-base font-semibold text-slate-200 mb-1">Aylara Göre Başarı Oranı</h3>
+                    <p class="text-xs text-slate-400 mb-4">Seçili yıldaki aylık ortalama tamamlanma yüzdesi</p>
+                    <div id="yearlyMonthBars" class="grid grid-cols-12 gap-2 items-end h-44 pt-6 border-b border-slate-700"></div>
+                </div>
+
+                <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-6">
+                    <h3 class="text-base font-semibold text-slate-200 mb-1">Yıllık Hedef İstatistikleri</h3>
+                    <p class="text-xs text-slate-400 mb-4">Bu yıl her alışkanlığı toplam kaç gün tamamladınız?</p>
+                    <div id="yearlyHabitStats" class="space-y-3 max-h-44 overflow-y-auto pr-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hızlı Kod Yapıştırma Modalı -->
+    <div id="syncModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2"><span>📲</span> Aktarım Kodunu Yapıştır</h3>
+                <button onclick="closeSyncModal()" class="text-slate-400 hover:text-white cursor-pointer">✕</button>
+            </div>
+            <p class="text-xs text-slate-400">Diğer cihazınızdan aldığınız metin kodunu aşağıya yapıştırın:</p>
+            <textarea id="syncCodeInput" rows="4" placeholder="eyJpZCI6MSwibmFtZSI6..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-slate-200 font-mono focus:outline-none focus:border-indigo-500"></textarea>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="closeSyncModal()" class="px-4 py-2 rounded-xl text-xs font-medium bg-slate-700 hover:bg-slate-600 text-slate-300 cursor-pointer">İptal</button>
+                <button onclick="applySyncCode()" class="px-4 py-2 rounded-xl text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white cursor-pointer">Verileri Yükle</button>
+            </div>
         </div>
     </div>
 
     <!-- Bildirim (Toast) Kutusu -->
-    <div id="toast" class="fixed bottom-5 right-5 bg-slate-800 border border-slate-600 text-white px-4 py-3 rounded-xl shadow-2xl text-sm font-medium transition-all duration-300 toast-exit pointer-events-none">
-        Bildirim mesajı
-    </div>
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-800 border border-slate-600 text-white px-4 py-3 rounded-xl shadow-2xl text-sm font-medium transition-all duration-300 toast-exit pointer-events-none z-50"></div>
 
     <script>
-        const days = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
-        
-        // Varsayılan başlangıç verileri
-        let habits = JSON.parse(localStorage.getItem('habits_data')) || [
-            { id: 1, name: '💧 2.5 Litre Su İç', completed: [true, true, true, false, false, false, false] },
-            { id: 2, name: '📚 25 Sayfa Kitap Oku', completed: [true, false, true, true, false, false, false] },
-            { id: 3, name: '🏃‍♂️ 30 Dk Yürüyüş / Antrenman', completed: [false, true, true, true, false, false, false] },
-            { id: 4, name: '🧘‍♂️ Şekersiz Beslenme', completed: [true, true, false, false, false, false, false] }
-        ];
+        const dayNamesShort = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
+        const monthNames = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+        const monthNamesShort = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
 
-        // Tarihi Göster
-        const now = new Date();
-        document.getElementById('currentDateText').innerText = now.toLocaleDateString('tr-TR', { 
+        function formatDateKey(date) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function getMonday(d) {
+            const date = new Date(d);
+            const day = date.getDay();
+            const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+            date.setDate(diff);
+            date.setHours(0, 0, 0, 0);
+            return date;
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayKey = formatDateKey(today);
+
+        let currentView = 'weekly';
+        let selectedWeekOffset = 0;
+        let selectedMonthDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        let selectedYear = today.getFullYear();
+
+        function loadHabitsData() {
+            const raw = localStorage.getItem('habits_data_v2') || localStorage.getItem('habits_data');
+            if (!raw) {
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+                const twoDaysAgo = new Date(today);
+                twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
+                const kYest = formatDateKey(yesterday);
+                const kTwo = formatDateKey(twoDaysAgo);
+
+                return [
+                    { id: 1, name: '💧 2.5 Litre Su İç', history: { [kTwo]: true, [kYest]: true } },
+                    { id: 2, name: '📚 25 Sayfa Kitap Oku', history: { [kTwo]: true, [kYest]: true } },
+                    { id: 3, name: '🏃‍♂️ Antrenman / Yürüyüş', history: { [kYest]: true } },
+                    { id: 4, name: '🧘‍♂️ Şekersiz Beslenme', history: { [kTwo]: true } }
+                ];
+            }
+
+            let parsed = JSON.parse(raw);
+            const mondayOfCurrent = getMonday(today);
+
+            parsed = parsed.map(h => {
+                if (Array.isArray(h.completed) && !h.history) {
+                    const history = {};
+                    h.completed.forEach((val, idx) => {
+                        if (val) {
+                            const d = new Date(mondayOfCurrent);
+                            d.setDate(d.getDate() + idx);
+                            history[formatDateKey(d)] = true;
+                        }
+                    });
+                    return { id: h.id, name: h.name, history };
+                }
+                return { id: h.id, name: h.name, history: h.history || {} };
+            });
+
+            localStorage.setItem('habits_data_v2', JSON.stringify(parsed));
+            return parsed;
+        }
+
+        let habits = loadHabitsData();
+
+        function saveData() {
+            localStorage.setItem('habits_data_v2', JSON.stringify(habits));
+        }
+
+        document.getElementById('currentDateText').innerText = today.toLocaleDateString('tr-TR', { 
             weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
         });
 
+        function calculateActiveStreak(historyObj) {
+            let streak = 0;
+            let checkDate = new Date(today);
+
+            if (!historyObj[formatDateKey(checkDate)]) {
+                checkDate.setDate(checkDate.getDate() - 1);
+            }
+
+            while (historyObj[formatDateKey(checkDate)]) {
+                streak++;
+                checkDate.setDate(checkDate.getDate() - 1);
+            }
+            return streak;
+        }
+
+        // --- SIKI DİSİPLİN MODU: SADECE BUGÜN DÜZENLENEBİLİR ---
+        function toggleDate(habitId, dateKey) {
+            if (dateKey < todayKey) {
+                showToast('🔒 Geçmiş günlerin alışkanlık kayıtları kilitlidir, değiştirilemez!', true);
+                return;
+            }
+            if (dateKey > todayKey) {
+                showToast('⏳ Gelecek günleri şimdiden işaretleyemezsiniz!', true);
+                return;
+            }
+
+            const habit = habits.find(h => h.id === habitId);
+            if (!habit) return;
+
+            if (habit.history[dateKey]) {
+                delete habit.history[dateKey];
+            } else {
+                habit.history[dateKey] = true;
+            }
+            saveData();
+            renderAll();
+        }
+
+        function addHabit() {
+            const input = document.getElementById('habitInput');
+            const name = input.value.trim();
+            if (!name) return;
+
+            habits.push({ id: Date.now(), name, history: {} });
+            input.value = '';
+            saveData();
+            renderAll();
+            showToast('✨ Yeni hedef eklendi!');
+        }
+
+        function deleteHabit(habitId) {
+            if (!confirm('Bu hedefi ve tüm geçmiş kayıtlarını silmek istediğinize emin misiniz?')) return;
+            habits = habits.filter(h => h.id !== habitId);
+            saveData();
+            renderAll();
+            showToast('🗑️ Hedef silindi.');
+        }
+
+        function switchView(view) {
+            currentView = view;
+            ['weekly', 'monthly', 'yearly'].forEach(v => {
+                document.getElementById(`view-${v}`).classList.toggle('hidden', v !== view);
+                const btn = document.getElementById(`tab-${v}`);
+                if (v === view) {
+                    btn.className = 'flex-1 md:flex-none px-5 py-2 rounded-xl text-sm font-medium transition cursor-pointer bg-indigo-600 text-white';
+                } else {
+                    btn.className = 'flex-1 md:flex-none px-5 py-2 rounded-xl text-sm font-medium transition cursor-pointer text-slate-400 hover:text-white';
+                }
+            });
+            renderAll();
+        }
+
+        function changeWeek(dir) { selectedWeekOffset += dir; renderAll(); }
+        function resetToCurrentWeek() { selectedWeekOffset = 0; renderAll(); }
+        function changeMonth(dir) {
+            selectedMonthDate = new Date(selectedMonthDate.getFullYear(), selectedMonthDate.getMonth() + dir, 1);
+            renderAll();
+        }
+        function changeYear(dir) { selectedYear += dir; renderAll(); }
+
+        function updateHeaderStats() {
+            if (habits.length === 0) {
+                document.getElementById('statWeekly').innerText = '0%';
+                document.getElementById('statMonthly').innerText = '0%';
+                document.getElementById('statBestStreak').innerText = '🔥 0';
+                return;
+            }
+
+            const mon = getMonday(today);
+            let weekDone = 0;
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(mon);
+                d.setDate(d.getDate() + i);
+                const k = formatDateKey(d);
+                habits.forEach(h => { if (h.history[k]) weekDone++; });
+            }
+            const weekPct = Math.round((weekDone / (habits.length * 7)) * 100);
+            document.getElementById('statWeekly').innerText = `${weekPct}%`;
+
+            const daysInCurrentMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+            let monthDone = 0;
+            for (let d = 1; d <= daysInCurrentMonth; d++) {
+                const k = formatDateKey(new Date(today.getFullYear(), today.getMonth(), d));
+                habits.forEach(h => { if (h.history[k]) monthDone++; });
+            }
+            const monthPct = Math.round((monthDone / (habits.length * daysInCurrentMonth)) * 100);
+            document.getElementById('statMonthly').innerText = `${monthPct}%`;
+
+            let bestStreak = 0;
+            habits.forEach(h => {
+                const s = calculateActiveStreak(h.history);
+                if (s > bestStreak) bestStreak = s;
+            });
+            document.getElementById('statBestStreak').innerText = `🔥 ${bestStreak} Gün`;
+        }
+
+        // --- 1. HAFTALIK GÖRÜNÜM RENDER ---
+        function renderWeekly() {
+            const baseMonday = getMonday(today);
+            baseMonday.setDate(baseMonday.getDate() + (selectedWeekOffset * 7));
+
+            const weekDates = [];
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(baseMonday);
+                d.setDate(d.getDate() + i);
+                weekDates.push(d);
+            }
+
+            const firstD = weekDates[0];
+            const lastD = weekDates[6];
+            document.getElementById('weekRangeLabel').innerText = 
+                `${firstD.getDate()} ${monthNamesShort[firstD.getMonth()]} - ${lastD.getDate()} ${monthNamesShort[lastD.getMonth()]} ${lastD.getFullYear()}`;
+
+            const headerEl = document.getElementById('weeklyTableHeader');
+            let headerHtml = `<th class="pb-3 font-medium">Hedef</th>`;
+            weekDates.forEach((d, idx) => {
+                const k = formatDateKey(d);
+                const isToday = k === todayKey;
+                const isPast = k < todayKey;
+                headerHtml += `
+                    <th class="pb-3 font-medium text-center ${isToday ? 'text-emerald-400 font-bold' : isPast ? 'text-slate-500' : 'text-slate-400'}">
+                        <div>${dayNamesShort[idx]} ${isPast ? '🔒' : ''}</div>
+                        <div class="text-[10px] opacity-75">${d.getDate()}</div>
+                    </th>`;
+            });
+            headerHtml += `<th class="pb-3 font-medium text-center">Seri</th><th class="pb-3 font-medium text-right">Sil</th>`;
+            headerEl.innerHTML = headerHtml;
+
+            const listEl = document.getElementById('weeklyHabitList');
+            listEl.innerHTML = '';
+
+            habits.forEach(habit => {
+                const streak = calculateActiveStreak(habit.history);
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-700/30 transition';
+
+                let cellsHtml = '';
+                weekDates.forEach(d => {
+                    const k = formatDateKey(d);
+                    const done = !!habit.history[k];
+                    const isToday = k === todayKey;
+                    const isPast = k < todayKey;
+
+                    let btnClasses = '';
+                    let btnContent = '✓';
+                    let titleText = '';
+
+                    if (isToday) {
+                        titleText = 'Bugünün hedefini işaretle / kaldır';
+                        btnClasses = done 
+                            ? 'check-btn-active cursor-pointer bg-emerald-500 border-emerald-400 text-slate-950 font-bold shadow-sm shadow-emerald-500/30' 
+                            : 'check-btn-active cursor-pointer bg-slate-900 border-emerald-500/60 text-transparent hover:border-emerald-400';
+                    } else if (isPast) {
+                        titleText = 'Geçmiş gün (Değiştirilemez)';
+                        if (done) {
+                            btnClasses = 'cursor-not-allowed bg-emerald-900/50 border-emerald-700/50 text-emerald-300/70 font-bold';
+                        } else {
+                            btnContent = '✕';
+                            btnClasses = 'cursor-not-allowed bg-slate-900/50 border-slate-800 text-slate-600/60 text-xs';
+                        }
+                    } else {
+                        titleText = 'Gelecek gün (Henüz aktif değil)';
+                        btnContent = '';
+                        btnClasses = 'cursor-not-allowed bg-slate-900/30 border-slate-800/60 text-transparent opacity-50';
+                    }
+
+                    cellsHtml += `
+                        <td class="py-3.5 text-center ${isToday ? 'bg-emerald-950/20 rounded-lg' : ''}">
+                            <button onclick="toggleDate(${habit.id}, '${k}')" title="${titleText}"
+                                class="check-btn w-7 h-7 rounded-lg inline-flex items-center justify-center border ${btnClasses}">
+                                ${btnContent}
+                            </button>
+                        </td>`;
+                });
+
+                tr.innerHTML = `
+                    <td class="py-3.5 pr-4 font-medium text-slate-200">${habit.name}</td>
+                    ${cellsHtml}
+                    <td class="py-3.5 text-center font-semibold text-amber-400">🔥 ${streak}</td>
+                    <td class="py-3.5 text-right">
+                        <button onclick="deleteHabit(${habit.id})" class="text-slate-500 hover:text-rose-400 transition px-1 cursor-pointer">✕</button>
+                    </td>`;
+                listEl.appendChild(tr);
+            });
+
+            const chartEl = document.getElementById('weeklyChartContainer');
+            chartEl.innerHTML = '';
+            weekDates.forEach((d, idx) => {
+                const k = formatDateKey(d);
+                let count = 0;
+                habits.forEach(h => { if (h.history[k]) count++; });
+                const pct = habits.length > 0 ? Math.round((count / habits.length) * 100) : 0;
+                const barColor = pct === 100 ? 'bg-emerald-400' : pct >= 50 ? 'bg-indigo-500' : 'bg-slate-600';
+                const isToday = k === todayKey;
+
+                const col = document.createElement('div');
+                col.className = 'flex flex-col items-center h-full justify-end group';
+                col.innerHTML = `
+                    <span class="text-[11px] font-medium text-slate-400 mb-1">${pct}%</span>
+                    <div class="w-full bg-slate-900 rounded-t-lg h-36 flex items-end p-1 border ${isToday ? 'border-emerald-500/60' : 'border-slate-700/60'}">
+                        <div class="bar-fill w-full rounded-t-md ${barColor}" style="height: ${Math.max(pct, 6)}%"></div>
+                    </div>
+                    <span class="text-xs ${isToday ? 'text-emerald-400 font-bold' : 'text-slate-300'} mt-2">${dayNamesShort[idx]}</span>
+                `;
+                chartEl.appendChild(col);
+            });
+        }
+
+        // --- 2. AYLIK GÖRÜNÜM RENDER ---
+        function renderMonthly() {
+            const year = selectedMonthDate.getFullYear();
+            const month = selectedMonthDate.getMonth();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            document.getElementById('monthLabel').innerText = `${monthNames[month]} ${year}`;
+
+            const headerEl = document.getElementById('monthlyTableHeader');
+            let hHtml = `<th class="pb-3 pr-4 font-medium min-w-[160px] sticky left-0 bg-slate-800 z-10">Hedef</th>`;
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dateObj = new Date(year, month, d);
+                const k = formatDateKey(dateObj);
+                const isToday = k === todayKey;
+                hHtml += `<th class="pb-3 px-1 text-center font-medium ${isToday ? 'text-emerald-400 font-bold underline' : ''}">${d}</th>`;
+            }
+            hHtml += `<th class="pb-3 pl-3 text-center font-medium">Oran</th>`;
+            headerEl.innerHTML = hHtml;
+
+            const listEl = document.getElementById('monthlyHabitList');
+            listEl.innerHTML = '';
+
+            habits.forEach(habit => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-700/20';
+                let rowHtml = `<td class="py-3 pr-4 font-medium text-slate-200 sticky left-0 bg-slate-800/95 z-10">${habit.name}</td>`;
+                let completedInMonth = 0;
+
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const k = formatDateKey(new Date(year, month, d));
+                    const done = !!habit.history[k];
+                    if (done) completedInMonth++;
+                    const isToday = k === todayKey;
+                    const isPast = k < todayKey;
+
+                    let cellClass = '';
+                    if (isToday) {
+                        cellClass = done 
+                            ? 'cursor-pointer bg-emerald-500 border-emerald-400 text-slate-950 font-bold shadow-sm shadow-emerald-500/40' 
+                            : 'cursor-pointer bg-slate-900 border-emerald-500 text-transparent hover:bg-emerald-950/40';
+                    } else if (isPast) {
+                        cellClass = done 
+                            ? 'cursor-not-allowed bg-emerald-900/60 border-emerald-700/50 text-emerald-300/70 font-bold' 
+                            : 'cursor-not-allowed bg-slate-900/50 border-slate-800 text-transparent';
+                    } else {
+                        cellClass = 'cursor-not-allowed bg-slate-900/20 border-slate-800/40 text-transparent opacity-40';
+                    }
+
+                    rowHtml += `
+                        <td class="py-2.5 px-0.5 text-center ${isToday ? 'bg-emerald-950/20' : ''}">
+                            <button onclick="toggleDate(${habit.id}, '${k}')" title="${d} ${monthNames[month]} ${isToday ? '(Bugün)' : '(Kilitli)'}"
+                                class="w-5 h-5 rounded inline-flex items-center justify-center border text-[10px] transition ${cellClass}">✓</button>
+                        </td>`;
+                }
+
+                const pct = Math.round((completedInMonth / daysInMonth) * 100);
+                rowHtml += `<td class="py-2.5 pl-3 text-center font-semibold text-indigo-300">${pct}%</td>`;
+                tr.innerHTML = rowHtml;
+                listEl.appendChild(tr);
+            });
+        }
+
+        // --- 3. YILLIK GÖRÜNÜM RENDER ---
+        function renderYearly() {
+            document.getElementById('yearLabel').innerText = selectedYear;
+
+            const heatmapEl = document.getElementById('yearlyHeatmap');
+            heatmapEl.innerHTML = '';
+
+            const startDate = new Date(selectedYear, 0, 1);
+            const endDate = new Date(selectedYear, 11, 31);
+
+            const startDayOfWeek = (startDate.getDay() + 6) % 7;
+            for (let i = 0; i < startDayOfWeek; i++) {
+                const empty = document.createElement('div');
+                empty.className = 'w-3.5 h-3.5';
+                heatmapEl.appendChild(empty);
+            }
+
+            let curr = new Date(startDate);
+            while (curr <= endDate) {
+                const k = formatDateKey(curr);
+                let doneCount = 0;
+                habits.forEach(h => { if (h.history[k]) doneCount++; });
+                const ratio = habits.length > 0 ? doneCount / habits.length : 0;
+
+                let colorClass = 'bg-slate-900 border border-slate-700/60';
+                if (ratio > 0 && ratio < 0.35) colorClass = 'bg-emerald-900';
+                else if (ratio >= 0.35 && ratio < 0.7) colorClass = 'bg-emerald-700';
+                else if (ratio >= 0.7 && ratio < 1) colorClass = 'bg-emerald-500';
+                else if (ratio === 1) colorClass = 'bg-emerald-400 shadow-sm shadow-emerald-400/40';
+
+                const cell = document.createElement('div');
+                cell.className = `w-3.5 h-3.5 rounded-sm ${colorClass} transition hover:scale-125`;
+                cell.title = `${curr.toLocaleDateString('tr-TR')}: ${doneCount}/${habits.length} tamamlandı (%${Math.round(ratio * 100)})`;
+                heatmapEl.appendChild(cell);
+
+                curr.setDate(curr.getDate() + 1);
+            }
+
+            const monthBarsEl = document.getElementById('yearlyMonthBars');
+            monthBarsEl.innerHTML = '';
+
+            for (let m = 0; m < 12; m++) {
+                const daysInM = new Date(selectedYear, m + 1, 0).getDate();
+                let doneInM = 0;
+                for (let d = 1; d <= daysInM; d++) {
+                    const k = formatDateKey(new Date(selectedYear, m, d));
+                    habits.forEach(h => { if (h.history[k]) doneInM++; });
+                }
+                const totalPossible = habits.length * daysInM;
+                const pct = totalPossible > 0 ? Math.round((doneInM / totalPossible) * 100) : 0;
+                const barColor = pct >= 75 ? 'bg-emerald-400' : pct >= 40 ? 'bg-indigo-500' : 'bg-slate-600';
+
+                const col = document.createElement('div');
+                col.className = 'flex flex-col items-center h-full justify-end';
+                col.innerHTML = `
+                    <span class="text-[10px] text-slate-400 mb-1">${pct}%</span>
+                    <div class="w-full bg-slate-900 rounded-t-md h-28 flex items-end p-0.5 border border-slate-700/60">
+                        <div class="bar-fill w-full rounded-t-sm ${barColor}" style="height: ${Math.max(pct, 5)}%"></div>
+                    </div>
+                    <span class="text-[10px] text-slate-300 mt-1.5">${monthNamesShort[m]}</span>
+                `;
+                monthBarsEl.appendChild(col);
+            }
+
+            const statsEl = document.getElementById('yearlyHabitStats');
+            statsEl.innerHTML = '';
+            const isLeap = (selectedYear % 4 === 0 && selectedYear % 100 !== 0) || (selectedYear % 400 === 0);
+            const totalDaysInYear = isLeap ? 366 : 365;
+
+            habits.forEach(h => {
+                let yearCount = 0;
+                Object.keys(h.history).forEach(k => {
+                    if (k.startsWith(`${selectedYear}-`) && h.history[k]) yearCount++;
+                });
+                const pct = Math.round((yearCount / totalDaysInYear) * 100);
+
+                const item = document.createElement('div');
+                item.className = 'bg-slate-900/80 border border-slate-700/70 p-3 rounded-xl';
+                item.innerHTML = `
+                    <div class="flex justify-between text-xs mb-1.5">
+                        <span class="font-medium text-slate-200">${h.name}</span>
+                        <span class="text-emerald-400 font-semibold">${yearCount} Gün (%${pct})</span>
+                    </div>
+                    <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                        <div class="bg-emerald-500 h-full rounded-full" style="width: ${pct}%"></div>
+                    </div>
+                `;
+                statsEl.appendChild(item);
+            });
+        }
+
+        function renderAll() {
+            updateHeaderStats();
+            if (currentView === 'weekly') renderWeekly();
+            else if (currentView === 'monthly') renderMonthly();
+            else if (currentView === 'yearly') renderYearly();
+        }
+
+        // --- BİLDİRİM VE SENKRONİZASYON ---
         function showToast(message, isError = false) {
             const toast = document.getElementById('toast');
             toast.innerText = message;
-            toast.className = `fixed bottom-5 right-5 px-4 py-3 rounded-xl shadow-2xl text-sm font-medium transition-all duration-300 toast-enter ${
+            toast.className = `fixed bottom-5 right-5 px-4 py-3 rounded-xl shadow-2xl text-sm font-medium transition-all duration-300 toast-enter z-50 ${
                 isError ? 'bg-rose-950 border border-rose-700 text-rose-200' : 'bg-emerald-950 border border-emerald-700 text-emerald-200'
             }`;
             setTimeout(() => {
@@ -148,29 +716,78 @@
             }, 3000);
         }
 
-        function saveData() {
-            localStorage.setItem('habits_data', JSON.stringify(habits));
+        function validateHabitsData(data) {
+            return Array.isArray(data) && data.every(item => 
+                typeof item.id !== 'undefined' &&
+                typeof item.name === 'string' &&
+                (typeof item.history === 'object' || Array.isArray(item.completed))
+            );
         }
 
-        // --- JSON DIŞA AKTARMA (EXPORT) ---
+        function encodeBase64UTF8(str) {
+            const bytes = new TextEncoder().encode(str);
+            let binary = '';
+            bytes.forEach(b => binary += String.fromCharCode(b));
+            return btoa(binary);
+        }
+
+        function decodeBase64UTF8(base64) {
+            const binary = atob(base64.trim());
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+            return new TextDecoder().decode(bytes);
+        }
+
+        function copySyncCode() {
+            try {
+                const syncCode = encodeBase64UTF8(JSON.stringify(habits));
+                navigator.clipboard.writeText(syncCode).then(() => {
+                    showToast('📋 Aktarım kodu kopyalandı! Kendine mesaj atabilirsin.');
+                }).catch(() => prompt('Kodu kopyalayın:', syncCode));
+            } catch (e) {
+                showToast('❌ Kod oluşturulamadı!', true);
+            }
+        }
+
+        function openSyncModal() {
+            document.getElementById('syncCodeInput').value = '';
+            document.getElementById('syncModal').classList.replace('hidden', 'flex');
+            document.getElementById('syncCodeInput').focus();
+        }
+
+        function closeSyncModal() {
+            document.getElementById('syncModal').classList.replace('flex', 'hidden');
+        }
+
+        function applySyncCode() {
+            const code = document.getElementById('syncCodeInput').value.trim();
+            if (!code) return showToast('⚠️ Lütfen önce kodu yapıştırın!', true);
+            try {
+                const parsed = JSON.parse(decodeBase64UTF8(code));
+                if (!validateHabitsData(parsed)) throw new Error();
+                localStorage.setItem('habits_data_v2', JSON.stringify(parsed));
+                habits = loadHabitsData();
+                renderAll();
+                closeSyncModal();
+                showToast('🎉 Tüm geçmiş ve hedefler başarıyla yüklendi!');
+            } catch (e) {
+                showToast('❌ Hata: Geçersiz veya eksik aktarım kodu!', true);
+            }
+        }
+
         function exportData() {
-            const dataStr = JSON.stringify(habits, null, 2);
-            const blob = new Blob([dataStr], { type: 'application/json' });
+            const blob = new Blob([JSON.stringify(habits, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
-            
-            const dateStamp = new Date().toISOString().slice(0, 10);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `aliskanlik-yedek-${dateStamp}.json`;
+            a.download = `aliskanlik-yedek-${todayKey}.json`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-
-            showToast('✅ Yedek dosyası başarıyla indirildi!');
+            showToast('✅ JSON yedek dosyası indirildi!');
         }
 
-        // --- JSON İÇE AKTARMA (IMPORT) ---
         function triggerImport() {
             document.getElementById('importFileInput').click();
         }
@@ -178,175 +795,29 @@
         function importData(event) {
             const file = event.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
-                    const importedData = JSON.parse(e.target.result);
-
-                    // Veri formatı doğrulama (Validation)
-                    const isValid = Array.isArray(importedData) && importedData.every(item => 
-                        typeof item.id !== 'undefined' &&
-                        typeof item.name === 'string' &&
-                        Array.isArray(item.completed) &&
-                        item.completed.length === 7
-                    );
-
-                    if (!isValid) {
-                        throw new Error('Geçersiz dosya yapısı.');
-                    }
-
-                    habits = importedData;
-                    saveData();
-                    render();
-                    showToast('🎉 Veriler başarıyla içe aktarıldı!');
+                    const parsed = JSON.parse(e.target.result);
+                    if (!validateHabitsData(parsed)) throw new Error();
+                    localStorage.setItem('habits_data_v2', JSON.stringify(parsed));
+                    habits = loadHabitsData();
+                    renderAll();
+                    showToast('🎉 Yedek dosyası başarıyla yüklendi!');
                 } catch (err) {
-                    showToast('❌ Hata: Geçersiz veya bozuk JSON dosyası!', true);
+                    showToast('❌ Geçersiz JSON dosyası!', true);
                 } finally {
-                    // Aynı dosyayı tekrar seçebilmek için input'u sıfırla
                     event.target.value = '';
                 }
             };
             reader.readAsText(file);
         }
 
-        // Kesintisiz seri hesaplama
-        function calculateStreak(completedArray) {
-            let currentStreak = 0;
-            let maxStreak = 0;
-            for (let status of completedArray) {
-                if (status) {
-                    currentStreak++;
-                    if (currentStreak > maxStreak) maxStreak = currentStreak;
-                } else {
-                    currentStreak = 0;
-                }
-            }
-            return maxStreak;
-        }
-
-        function toggleDay(habitId, dayIndex) {
-            const habit = habits.find(h => h.id === habitId);
-            if (habit) {
-                habit.completed[dayIndex] = !habit.completed[dayIndex];
-                saveData();
-                render();
-            }
-        }
-
-        function addHabit() {
-            const input = document.getElementById('habitInput');
-            const name = input.value.trim();
-            if (!name) return;
-
-            habits.push({
-                id: Date.now(),
-                name: name,
-                completed: [false, false, false, false, false, false, false]
-            });
-
-            input.value = '';
-            saveData();
-            render();
-            showToast('✨ Yeni hedef eklendi!');
-        }
-
-        function deleteHabit(habitId) {
-            habits = habits.filter(h => h.id !== habitId);
-            saveData();
-            render();
-        }
-
-        function resetWeek() {
-            if (confirm('Bu haftanın tüm işaretlemelerini sıfırlamak istediğinize emin misiniz?')) {
-                habits.forEach(h => h.completed = [false, false, false, false, false, false, false]);
-                saveData();
-                render();
-                showToast('🔄 Haftalık çizelge sıfırlandı.');
-            }
-        }
-
-        function render() {
-            const listEl = document.getElementById('habitList');
-            const chartEl = document.getElementById('chartContainer');
-            listEl.innerHTML = '';
-            chartEl.innerHTML = '';
-
-            let totalChecks = 0;
-            let bestOverallStreak = 0;
-
-            // 1. Tabloyu Oluştur
-            habits.forEach(habit => {
-                const streak = calculateStreak(habit.completed);
-                if (streak > bestOverallStreak) bestOverallStreak = streak;
-
-                const tr = document.createElement('tr');
-                tr.className = 'hover:bg-slate-700/30 transition';
-                
-                let daysHtml = '';
-                habit.completed.forEach((done, idx) => {
-                    if (done) totalChecks++;
-                    daysHtml += `
-                        <td class="py-3.5 text-center">
-                            <button onclick="toggleDay(${habit.id}, ${idx})" 
-                                class="check-btn w-7 h-7 rounded-lg inline-flex items-center justify-center border cursor-pointer ${
-                                    done 
-                                    ? 'bg-emerald-500 border-emerald-400 text-slate-950 font-bold shadow-sm shadow-emerald-500/30' 
-                                    : 'bg-slate-900 border-slate-700 text-transparent hover:border-slate-500'
-                                }">
-                                ✓
-                            </button>
-                        </td>
-                    `;
-                });
-
-                tr.innerHTML = `
-                    <td class="py-3.5 pr-4 font-medium text-slate-200">${habit.name}</td>
-                    ${daysHtml}
-                    <td class="py-3.5 text-center font-semibold text-amber-400">🔥 ${streak}</td>
-                    <td class="py-3.5 text-right">
-                        <button onclick="deleteHabit(${habit.id})" class="text-slate-500 hover:text-rose-400 transition px-1 cursor-pointer">✕</button>
-                    </td>
-                `;
-                listEl.appendChild(tr);
-            });
-
-            // 2. Üst İstatistikleri Güncelle
-            const totalPossible = habits.length * 7;
-            const weeklyPercentage = totalPossible > 0 ? Math.round((totalChecks / totalPossible) * 100) : 0;
-            document.getElementById('weeklyRate').innerText = `${weeklyPercentage}%`;
-            document.getElementById('bestStreak').innerText = `🔥 ${bestOverallStreak} Gün`;
-
-            // 3. Haftalık Grafiği Oluştur
-            days.forEach((dayName, dayIdx) => {
-                let completedOnDay = 0;
-                habits.forEach(h => {
-                    if (h.completed[dayIdx]) completedOnDay++;
-                });
-
-                const pct = habits.length > 0 ? Math.round((completedOnDay / habits.length) * 100) : 0;
-                const barColor = pct === 100 ? 'bg-emerald-400' : pct >= 50 ? 'bg-indigo-500' : 'bg-slate-600';
-
-                const col = document.createElement('div');
-                col.className = 'flex flex-col items-center h-full justify-end group';
-                col.innerHTML = `
-                    <span class="text-[11px] font-medium text-slate-400 mb-1 opacity-80 group-hover:opacity-100">${pct}%</span>
-                    <div class="w-full bg-slate-900 rounded-t-lg h-36 flex items-end p-1 border border-slate-700/60">
-                        <div class="bar-fill w-full rounded-t-md ${barColor}" style="height: ${Math.max(pct, 6)}%"></div>
-                    </div>
-                    <span class="text-xs text-slate-300 mt-2 font-medium">${dayName}</span>
-                `;
-                chartEl.appendChild(col);
-            });
-        }
-
-        // Enter tuşu ile alışkanlık ekleme desteği
-        document.getElementById('habitInput').addEventListener('keypress', function (e) {
+        document.getElementById('habitInput').addEventListener('keypress', e => {
             if (e.key === 'Enter') addHabit();
         });
 
-        // İlk yükleme
-        render();
+        renderAll();
     </script>
 </body>
 </html>
